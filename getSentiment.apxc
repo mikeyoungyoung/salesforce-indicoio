@@ -1,0 +1,23 @@
+public class getSentimentIO {
+	@Future(callout=true)
+    
+    public static void getSentiment(String data, ID caseID){
+        //Wrap the indico client
+        String jsonResp = indicoClient.buildClient('sentiment', data);
+
+        //Build Response in APEX
+        Map<String, Object> results = (Map<String, Object>)JSON.deserializeUntyped(jsonResp);
+		Decimal score = (decimal)results.get('results');
+		
+        //select case from case ID and update language field
+        Case c = [select mikeyoung__Key_Words__c from Case where Id=: caseID];
+        //Update Case Sentiment
+        c.mikeyoung__Sentiment__c = score;
+        //Run assignment rules
+        Database.DMLOptions options = new Database.DMLOptions();
+    	options.assignmentRuleHeader.useDefaultRule = true;
+	    c.setOptions(options);
+        
+        update c;
+    }
+}
