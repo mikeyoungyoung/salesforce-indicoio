@@ -1,0 +1,15 @@
+trigger setCaseLanguage on Case (after insert) {
+
+    for(Case c : Trigger.New){
+        //INSERT check if field is populated first
+        getLanguageIO.getLanguage(c.Description, c.Id);
+        getKeywordsIO.getKeywords(c.Description, c.Id);
+        getSentimentIO.getSentiment(c.Description, c.Id);
+        getTwitterEngageIO.getEngagement(c.Description, c.Id);
+        getEmotionIO.getEmotion(c.Description, c.Id);
+        //Here we probably want to rerun rules all at once vs every call
+        //indicoIO.getLanguage(c.Description, c.Id);
+        //indicoIO.getKeywords(c.Description, c.Id);
+            
+    }
+}
