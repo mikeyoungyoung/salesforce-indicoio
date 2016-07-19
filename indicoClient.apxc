@@ -1,0 +1,34 @@
+public class indicoClient {
+    
+    public static string buildClient(string API, string data){
+        IndicoIO_API_Key__mdt apiKey = [SELECT IndicoIO_API_Key__c FROM IndicoIO_API_Key__mdt];
+        Http http = new Http();
+        HttpRequest request = new HttpRequest();
+		String requestData = '';
+        //Need a way to pass other Parameters as optional but this is different for specific cases of the API
+        //[top_n] - Integer - optional (defaults to 3) - only return this many of the most likely topics
+		//[threshold] - Float - optional (defaults to .0) - only return topics with likelihood greater than this number 
+        String endPoint = 'https://apiv2.indico.io/'+API+'?key=' + apiKey.IndicoIO_API_Key__c;
+        request.setEndpoint(endPoint);
+        request.setMethod('POST');
+        
+        Map<String, String> r = new Map<String, String>();
+        r.put('data', data); // Should we add the case subject here also
+        
+        //detect keywords based on language
+        if (API == 'keywords') {
+            r.put('language', 'detect');
+		} else if (API == 'sentiment') {
+        	r.put('language', 'detect');
+		} 
+        
+        requestData = JSON.serialize(r);
+        request.setBody(requestData);
+        HTTPResponse response = http.send(request);
+        //return response.getBody();
+        //Parse the body into a string
+        JSONParser parser = JSON.createParser(response.getBody());
+		String jsonResp = response.getBody();
+        return jsonResp;
+    }
+}
