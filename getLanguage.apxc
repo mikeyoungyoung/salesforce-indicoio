@@ -1,0 +1,62 @@
+public class getLanguageIO {
+
+    @Future(callout=true)
+    //the signature of this function brings in <data> in the form of a string,
+    //and the caseID in order to update the case that initiated the trigger that 
+    //called this functions
+    public static void getLanguage(String data, ID caseID){
+		//Get the API Key for Indico from custom meta data entry: IndicoIO_API_Key__mdt.IndicoIO_API_Key__c
+        IndicoIO_API_Key__mdt apiKey = [SELECT IndicoIO_API_Key__c FROM IndicoIO_API_Key__mdt];
+        //Set up HTTP request
+        Http http = new Http();
+        HttpRequest request = new HttpRequest();
+		String requestData = '';
+        String endPoint = 'https://apiv2.indico.io/language?key=' + apiKey.IndicoIO_API_Key__c + '&version=2';
+        request.setEndpoint(endPoint);
+        request.setMethod('POST');
+		Map<String, String> r = new Map<String, String>();
+        r.put('data', data); // Should we add the case subject here also
+        requestData = JSON.serialize(r);
+        request.setBody(requestData);
+        HTTPResponse response = http.send(request);
+        
+        //Get response
+        JSONParser parser = JSON.createParser(response.getBody());
+		String jsonResp = response.getBody();
+        
+        Map<String, Object> results = (Map<String, Object>)JSON.deserializeUntyped(response.getBody());
+        Map<String, Object>  values = (Map<String, Object>)results.get('results');
+        //initialize variables to handle response
+        String languageName;
+        String languageNameFinal;
+        Double score; // = 0.0;
+        Double max = 0.0;
+        parser.nextToken();
+        parser.nextToken();
+        while (parser.nextToken() != null) {
+            //this is really dirty, will clean up soon
+            if ((parser.getCurrentToken() == JSONToken.FIELD_NAME) ) {
+                // Get to the embedded query value.
+                //parser.nextToken();
+                languageName = parser.getText();
+                parser.nextToken();
+                score = double.valueOf(parser.getText());  //parser.getText();
+                // set max if score greater than past max
+                if(score > max){ max = score; languageNameFinal = languageName;}
+                //System.debug('************ after parse: ' + languageName + ' - ' + score);
+            }
+        }
+        
+        //select case from case ID and update language field
+        
+        Case c = [select Case_Language__c from Case where Id=: caseID];
+        //c.Case_Language__c = languageNameFinal;
+        c.mikeyoung__Case_Language__c = languageNameFinal;
+        //re-run the case assignment rules to update the queue based on the new language detection
+        Database.DMLOptions options = new Database.DMLOptions();
+    	options.assignmentRuleHeader.useDefaultRule = true;
+	    c.setOptions(options);
+        
+        update c;
+    }
+}
