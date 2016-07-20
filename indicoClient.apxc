@@ -9,13 +9,13 @@ public class indicoClient {
         //[top_n] - Integer - optional (defaults to 3) - only return this many of the most likely topics
 		//[threshold] - Float - optional (defaults to .0) - only return topics with likelihood greater than this number 
         String endPoint = 'https://apiv2.indico.io/'+API+'?key=' + apiKey.IndicoIO_API_Key__c;
-        //String endPoint = 'https://apiv2.indico.io/'+API; //+'?key=' + apiKey.IndicoIO_API_Key__c;
+        //String endPoint = 'https://apiv2.indico.io/'+API; //this change needs to happen after August first
         request.setEndpoint(endPoint);
         request.setMethod('POST');
         
         Map<String, String> r = new Map<String, String>();
         r.put('data', data); // Should we add the case subject here also
-        //r.put('api_key', apiKey.IndicoIO_API_Key__c);
+        //r.put('api_key', apiKey.IndicoIO_API_Key__c); // push API key into header after August 1st
         //detect keywords based on language
         if (API == 'keywords') {
             r.put('language', 'detect');
