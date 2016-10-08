@@ -1,0 +1,22 @@
+//This is an example of calling a custom collection from Indico.io
+public with sharing class getCaseTypeIO {
+    @Future(callout=true)
+    public static void getCaseType(String data, ID caseID){
+        //Wrap the indico client
+        String jsonResp = indicoClient.buildClient('sdo_cases_type', data);
+        
+        //select case from case ID and update predicted case type
+        Case c = [select mikeyoung__Predicted_Case_Type__c from Case where Id=: caseID];
+        
+        //Update Case
+        //Assign the top value from the json response
+        c.mikeyoung__Predicted_Case_Type__c = parseIndico.getTopValue(jsonResp);
+        
+        //re-run the case assignment rules to update the queue based on the new language detection
+        Database.DMLOptions options = new Database.DMLOptions();
+    	options.assignmentRuleHeader.useDefaultRule = true;
+	    c.setOptions(options);
+        
+        update c;
+    }
+}
