@@ -3,23 +3,13 @@ public class getEmotionIO {
     public static void getEmotion(String data, ID caseID){
         //Wrap the indico client
         String jsonResp = indicoClient.buildClient('emotion', data);
-		Decimal score = 0.0;
-        Decimal max = 0.0;
-        String emotionFinal;
-        String emotion;
-        //Build Response in APEX
-        Map<String, Object> results = (Map<String, Object>)JSON.deserializeUntyped(jsonResp);
-        Map<String, Object>  values = (Map<String, Object>)results.get('results');
-		//find the highest value
-		for(String s:values.keyset()){
-            score = (decimal)values.get(s);
-            if(score > max){ max = score; emotionFinal = s;}
-	    }
 		
         //select case from case ID and update language field
         Case c = [select mikeyoung__Case_Emotion__c from Case where Id=: caseID];
-        //Update Case Sentiment
-        c.mikeyoung__Case_Emotion__c = emotionFinal;
+        
+        //Update Case Emotion
+        c.mikeyoung__Case_Emotion__c = parseIndico.getTopValue(jsonResp);
+        
         //Run assignment rules
         Database.DMLOptions options = new Database.DMLOptions();
     	options.assignmentRuleHeader.useDefaultRule = true;
