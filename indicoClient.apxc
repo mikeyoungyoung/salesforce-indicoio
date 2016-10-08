@@ -1,37 +1,74 @@
 public class indicoClient {
-    
+	//method to execute the call
     public static string buildClient(string API, string data){
+        //get the API key
         IndicoIO_API_Key__mdt apiKey = [SELECT IndicoIO_API_Key__c FROM IndicoIO_API_Key__mdt];
+        
+        //Build the HTTP request
         Http http = new Http();
         HttpRequest request = new HttpRequest();
 		String requestData = '';
+        String finalEndPoint = '';
+        //define indico map, though this is probably better as a custom object with a query to 
+        //find if one exists
+        //this will be replaced by a SOQL query to build a list of APIs in scope
+        Map<String, String> indicoAPIs = new Map<String, String>();
+        indicoAPIs.put('sentiment','sentiment');
+        indicoAPIs.put('sentimenthq','sentimenthq');
+        indicoAPIs.put('texttags','texttags');
+        indicoAPIs.put('language','language');
+        indicoAPIs.put('political','political');
+        indicoAPIs.put('keywords','keywords?version=2');
+        indicoAPIs.put('people','people');
+        indicoAPIs.put('places','places');
+        indicoAPIs.put('organizations','organizations');
+        indicoAPIs.put('twitterengagement','twitterengagement');
+        indicoAPIs.put('personality','personality');
+        indicoAPIs.put('relevance','relevance');
+        indicoAPIs.put('emotion','emotion');
+        //get a list of defined APIs
+		Map<ID, mikeyoung__Indico_API__c> indicoMap = new Map<ID, mikeyoung__Indico_API__c>([Select name from mikeyoung__Indico_API__c]);
+        
         //Need a way to pass other Parameters as optional but this is different for specific cases of the API
         //[top_n] - Integer - optional (defaults to 3) - only return this many of the most likely topics
 		//[threshold] - Float - optional (defaults to .0) - only return topics with likelihood greater than this number 
-        String endPoint = 'https://apiv2.indico.io/'+API ; //+'?key=' + apiKey.IndicoIO_API_Key__c;
+        String endPoint = 'https://apiv2.indico.io/'+API;
+        //URL endpoint for custom collections
+        // data format: --data '{"data": "string", "collection": "my_collection" }'
+        String customEndPoint = 'https://apiv2.indico.io/custom/predict';
         //String endPoint = 'https://apiv2.indico.io/'+API; //+'?key=' + apiKey.IndicoIO_API_Key__c;
-        request.setEndpoint(endPoint);
-        request.setMethod('POST');
         
+        //Set API key and data to pass
         Map<String, String> r = new Map<String, String>();
         r.put('data', data); // Should we add the case subject here also
         r.put('api_key', apiKey.IndicoIO_API_Key__c);
-        //detect keywords based on language
-        if (API == 'keywords') {
-            r.put('language', 'detect');
-		} else if (API == 'sentiment') {
-        	r.put('language', 'detect');
-		} 
         
+        //Check if the API requested is part of the standard list, then add language detection
+        //if not part of standard list then route to custom collection API
+        if (indicoAPIs.containsKey(API)){
+        	finalEndPoint = 'https://apiv2.indico.io/'+API;
+        	//detect keywords based on language
+        	if (API == 'keywords') {
+            	r.put('language', 'detect');
+			} else if (API == 'sentiment') {
+        		r.put('language', 'detect');
+			} 
+        } else{
+        	finalEndPoint = 'https://apiv2.indico.io/custom/predict';
+            //will have to map string to collection here
+        	r.put('collection', API);
+        }
+        request.setEndpoint(finalEndPoint);
+        request.setMethod('POST');
+        
+        //Make request
         requestData = JSON.serialize(r);
         request.setBody(requestData);
         HTTPResponse response = http.send(request);
-        //return response.getBody();
+
         //Parse the body into a string
         JSONParser parser = JSON.createParser(response.getBody());
 		String jsonResp = response.getBody();
         return jsonResp;
     }
-    
-
 }
