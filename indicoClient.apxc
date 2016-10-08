@@ -54,8 +54,14 @@ public class indicoClient {
         		r.put('language', 'detect');
 			} 
         } else{
+            //ideally we would have two method here since I would like to be able to add data
+            //to the custom collections as well
+            //i.e. when using a standard API indicoClient.standardPredict(data)
+            //and when custom... indicoClient.customPredict(), indicoClient.customAdd()
+            //indicoClient.customTrain(), etc.
+            //the add function can be a web call out when a case closes, followed by a train as well
+            
         	finalEndPoint = 'https://apiv2.indico.io/custom/predict';
-            //will have to map string to collection here
         	r.put('collection', API);
         }
         request.setEndpoint(finalEndPoint);
@@ -70,5 +76,61 @@ public class indicoClient {
         JSONParser parser = JSON.createParser(response.getBody());
 		String jsonResp = response.getBody();
         return jsonResp;
+    }
+    
+    public static string addData(String data, String collection){
+        //NOTE: The "data" object has to be an array ["text","label"] format so this might need to be a map
+        //endPoint https://apiv2.indico.io/custom/add_data
+        //
+        //Build the HTTP request
+        
+        IndicoIO_API_Key__mdt apiKey = [SELECT IndicoIO_API_Key__c FROM IndicoIO_API_Key__mdt];
+        //Set API key and data to pass
+        Map<String, String> r = new Map<String, String>();
+        r.put('data', data); // Should we add the case subject here also
+        r.put('api_key', apiKey.IndicoIO_API_Key__c);
+        r.put('collection', collection);
+        
+        Http http = new Http();
+        HttpRequest request = new HttpRequest();
+        String finalEndPoint = 'https://apiv2.indico.io/custom/add_data';
+        request.setEndpoint(finalEndPoint);
+        request.setMethod('POST');
+        
+        //Make request
+        String requestData = JSON.serialize(r);
+        request.setBody(requestData);
+        HTTPResponse response = http.send(request);
+
+        //Parse the body into a string
+        JSONParser parser = JSON.createParser(response.getBody());
+		String jsonResp = response.getBody();
+        return jsonResp;
+        
+    }
+    
+    public static void trainCollection(String collection){
+        //https://apiv2.indico.io/custom/train
+        //
+        IndicoIO_API_Key__mdt apiKey = [SELECT IndicoIO_API_Key__c FROM IndicoIO_API_Key__mdt];
+        //Set API key and data to pass
+        Map<String, String> r = new Map<String, String>();
+        r.put('api_key', apiKey.IndicoIO_API_Key__c);
+        r.put('collection', collection);
+        
+        Http http = new Http();
+        HttpRequest request = new HttpRequest();
+        String finalEndPoint = 'https://apiv2.indico.io/custom/train';
+        request.setEndpoint(finalEndPoint);
+        request.setMethod('POST');
+        
+        //Make request
+        String requestData = JSON.serialize(r);
+        request.setBody(requestData);
+        HTTPResponse response = http.send(request);
+
+        //Parse the body into a string
+        JSONParser parser = JSON.createParser(response.getBody());
+		String jsonResp = response.getBody();
     }
 }
