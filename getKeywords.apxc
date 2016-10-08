@@ -3,24 +3,13 @@ public class getKeywordsIO {
     public static void getKeywords(String data, ID caseID){
         //Wrap the indico client
         String jsonResp = indicoClient.buildClient('keywords', data);
-
-        //Build Response in APEX
-        Map<String, Object> results = (Map<String, Object>)JSON.deserializeUntyped(jsonResp); // response.getBody());
-		Map<String, Object>  values = (Map<String, Object>)results.get('results');
-		//Creat List of keywords from values Map
-		List<string> keysList = new List<string>();
-		for(String s:values.keyset()){
-      		string t=(string) s;
-       		keysList.add(t);
-	    }
-		//convert list to string
-		string keysString = String.join(keysList, ', ');
         
-        //select case from case ID and update language field
-        
+		//select the case that started the trigger        
         Case c = [select mikeyoung__Key_Words__c from Case where Id=: caseID];
-        //Update Case Topics
-        c.mikeyoung__Key_Words__c = keysString;
+        
+        //Update Case keywords
+        c.mikeyoung__Key_Words__c = parseIndico.returnMultiKeys(jsonResp);
+        
         //re-run the case assignment rules to update the queue based on the new language detection
         Database.DMLOptions options = new Database.DMLOptions();
     	options.assignmentRuleHeader.useDefaultRule = true;
@@ -28,4 +17,5 @@ public class getKeywordsIO {
         
         update c;
     }
+
 }
